@@ -36,6 +36,8 @@
 #include "handle_get_printable_amount.h"
 #include "handle_check_address.h"
 
+#include "app_ux_loc_strings.h"
+
 #define __NAME3(a, b, c) a##b##c
 #define NAME3(a, b, c) __NAME3(a, b, c)
 
@@ -200,12 +202,12 @@ void settings_submenu_selector(unsigned int idx) {
 }
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_idle_flow_1_step,
     nn,
     {
-      "Application",
-      "is ready",
+      UX_IDLE_FLOW_1_STEP_LINE1,
+      UX_IDLE_FLOW_1_STEP_LINE2
     });
 UX_STEP_CB(
     ux_idle_flow_2_step,
@@ -1176,6 +1178,7 @@ void init_coin_config(btchip_altcoin_config_t *coin_config) {
 
 void coin_main(btchip_altcoin_config_t *coin_config) {
     btchip_altcoin_config_t config;
+    unsigned int language;
     if (coin_config == NULL) {
         init_coin_config(&config);
         G_coin_config = &config;
@@ -1193,6 +1196,13 @@ void coin_main(btchip_altcoin_config_t *coin_config) {
                 // grab the current plane mode setting
                 G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
 #endif // TARGET_NANOX
+                // grab the current language setting:
+                language = os_setting_get(OS_SETTING_LANGUAGE, NULL, 0);
+                // os_setting_get can return 0, so we use value+1
+                if (!language || (--language >= NB_UX_LOC_LANGUAGES)) {
+                  language = UX_LOC_ENGLISH; // English by default
+                }
+                select_language(language);
 
                 btchip_context_init();
 
