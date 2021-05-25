@@ -139,6 +139,24 @@ unsigned int io_seproxyhal_touch_display_token_ok(const bagl_element_t *e) {
     return 0; // DO NOT REDRAW THE BUTTON
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+// Defines related to the order of the pubkey_export settings appearance:
+// WARNING: this order MUST match strings at SETTINGS_PUBKEY_EXPORT_AUTO_APPROVAL
+typedef enum {
+  SETTINGS_PUBKEY_EXPORT_IDX_AUTO_APPROVAL,
+  SETTINGS_PUBKEY_EXPORT_IDX_MANUAL_APPROVAL,
+  SETTINGS_PUBKEY_EXPORT_IDX_BACK,
+  NB_SETTINGS_PUBKEY_EXPORT_IDX
+} SETTINGS_PUBKEY_EXPORT_IDX;
+
+// Defines related to the order of the submenu settings appearance:
+// WARNING: this order MUST match strings at SETTINGS_SUBMENU_PUBKEY
+typedef enum {
+  SETTINGS_SUBMENU_IDX_PUBKEY,
+  SETTINGS_SUBMENU_IDX_BACK,
+  NB_SETTINGS_SUBMENU_IDX
+} SETTINGS_SUBMENU_IDX;
+
 const char* settings_submenu_getter(unsigned int idx);
 void settings_submenu_selector(unsigned int idx);
 
@@ -150,51 +168,40 @@ void settings_pubkey_export_change(unsigned int enabled) {
 //////////////////////////////////////////////////////////////////////////////////////
 // Public keys export submenu:
 
-const char* const settings_pubkey_export_getter_values[] = {
-  "Auto Approval",
-  "Manual Approval",
-  "Back"
-};
-
 const char* settings_pubkey_export_getter(unsigned int idx) {
-  if (idx < ARRAYLEN(settings_pubkey_export_getter_values)) {
-    return settings_pubkey_export_getter_values[idx];
+  if (idx < NB_SETTINGS_PUBKEY_EXPORT_IDX) {
+    return get_ux_loc_string(SETTINGS_PUBKEY_EXPORT_AUTO_APPROVAL + idx);
   }
   return NULL;
 }
 
 void settings_pubkey_export_selector(unsigned int idx) {
   switch(idx) {
-    case 0:
+    case SETTINGS_PUBKEY_EXPORT_IDX_AUTO_APPROVAL:
       settings_pubkey_export_change(0);
       break;
-    case 1:
+    case SETTINGS_PUBKEY_EXPORT_IDX_MANUAL_APPROVAL:
       settings_pubkey_export_change(1);
       break;
     default:
-      ux_menulist_init(0, settings_submenu_getter, settings_submenu_selector);
+      ux_menulist_init(SETTINGS_SUBMENU_IDX_PUBKEY, settings_submenu_getter, settings_submenu_selector);
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 // Settings menu:
 
-const char* const settings_submenu_getter_values[] = {
-  "Public keys export",
-  "Back",
-};
-
 const char* settings_submenu_getter(unsigned int idx) {
-  if (idx < ARRAYLEN(settings_submenu_getter_values)) {
-    return settings_submenu_getter_values[idx];
+  if (idx < NB_SETTINGS_SUBMENU_IDX) {
+    return get_ux_loc_string(SETTINGS_SUBMENU_PUBKEY + idx);
   }
   return NULL;
 }
 
 void settings_submenu_selector(unsigned int idx) {
   switch(idx) {
-    case 0:
-      ux_menulist_init_select(0, settings_pubkey_export_getter, settings_pubkey_export_selector, N_btchip.pubKeyRequestRestriction);
+    case SETTINGS_SUBMENU_IDX_PUBKEY:
+      ux_menulist_init_select(SETTINGS_PUBKEY_EXPORT_IDX_AUTO_APPROVAL, settings_pubkey_export_getter, settings_pubkey_export_selector, N_btchip.pubKeyRequestRestriction);
       break;
     default:
       ui_idle();
@@ -206,31 +213,29 @@ UX_LOC_STEP_NOCB(
     ux_idle_flow_1_step,
     nn,
     {
-      UX_IDLE_FLOW_1_STEP_LINE1,
-      UX_IDLE_FLOW_1_STEP_LINE2
+      UX_IDLE_FLOW_1_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_idle_flow_2_step,
     pb,
     ux_menulist_init(0, settings_submenu_getter, settings_submenu_selector),
     {
       &C_icon_coggle,
-      "Settings",
+      UX_IDLE_FLOW_2_STEP_LINE1
     });
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_idle_flow_3_step,
     bn,
     {
-      "Version",
-      APPVERSION,
+      UX_IDLE_FLOW_3_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_idle_flow_4_step,
     pb,
     os_sched_exit(-1),
     {
       &C_icon_dashboard_x,
-      "Quit",
+      UX_IDLE_FLOW_4_STEP_LINE1
     });
 UX_FLOW(ux_idle_flow,
   &ux_idle_flow_1_step,
@@ -241,13 +246,12 @@ UX_FLOW(ux_idle_flow,
 );
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_sign_flow_1_step,
     pnn,
     {
       &C_icon_certificate,
-      "Sign",
-      "message",
+      UX_SIGN_FLOW_1_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_sign_flow_2_step,
@@ -256,23 +260,21 @@ UX_STEP_NOCB(
       .title = "Message hash",
       .text = vars.tmp.fullAddress,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_sign_flow_3_step,
     pbb,
     io_seproxyhal_touch_message_signature_verify_ok(NULL),
     {
       &C_icon_validate_14,
-      "Sign",
-      "message",
+      UX_SIGN_FLOW_3_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_sign_flow_4_step,
     pbb,
     io_seproxyhal_touch_message_signature_verify_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Cancel",
-      "signature",
+      UX_SIGN_FLOW_4_STEP_LINE1
     });
 
 UX_FLOW(ux_sign_flow,
@@ -284,12 +286,12 @@ UX_FLOW(ux_sign_flow,
 
 //////////////////////////////////////////////////////////////////////
 
-UX_STEP_NOCB(ux_confirm_full_flow_1_step,
+UX_LOC_STEP_NOCB(
+    ux_confirm_full_flow_1_step,
     pnn,
     {
       &C_icon_eye,
-      "Review",
-      "transaction",
+      UX_CONFIRM_FULL_FLOW_1_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_confirm_full_flow_2_step,
@@ -312,22 +314,21 @@ UX_STEP_NOCB(
       .title = "Fees",
       .text = vars.tmp.feesAmount,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_confirm_full_flow_5_step,
     pbb,
     io_seproxyhal_touch_verify_ok(NULL),
     {
       &C_icon_validate_14,
-      "Accept",
-      "and send",
+      UX_CONFIRM_FULL_FLOW_5_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_confirm_full_flow_6_step,
     pb,
     io_seproxyhal_touch_verify_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject",
+      UX_CONFIRM_FULL_FLOW_6_STEP_LINE1
     });
 // confirm_full: confirm transaction / Amount: fullAmount / Address: fullAddress / Fees: feesAmount
 UX_FLOW(ux_confirm_full_flow,
@@ -341,13 +342,12 @@ UX_FLOW(ux_confirm_full_flow,
 
 //////////////////////////////////////////////////////////////////////
 
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_confirm_single_flow_1_step,
     pnn,
     {
       &C_icon_eye,
-      "Review",
-      vars.tmp.feesAmount, // output #
+      UX_CONFIRM_SINGLE_FLOW_1_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_confirm_single_flow_2_step,
@@ -363,21 +363,21 @@ UX_STEP_NOCB(
       .title = "Address",
       .text = vars.tmp.fullAddress,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_confirm_single_flow_5_step,
     pb,
     io_seproxyhal_touch_verify_ok(NULL),
     {
       &C_icon_validate_14,
-      "Accept",
+      UX_CONFIRM_SINGLE_FLOW_5_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_confirm_single_flow_6_step,
     pb,
     io_seproxyhal_touch_verify_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject",
+      UX_CONFIRM_SINGLE_FLOW_6_STEP_LINE1
     });
 // confirm_single: confirm output #x(feesAmount) / Amount: fullAmount / Address: fullAddress
 UX_FLOW(ux_confirm_single_flow,
@@ -390,13 +390,12 @@ UX_FLOW(ux_confirm_single_flow,
 
 //////////////////////////////////////////////////////////////////////
 
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_finalize_flow_1_step,
     pnn,
     {
       &C_icon_eye,
-      "Confirm",
-      "transaction"
+      UX_FINALIZE_FLOW_1_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_finalize_flow_4_step,
@@ -405,22 +404,21 @@ UX_STEP_NOCB(
       .title = "Fees",
       .text = vars.tmp.feesAmount,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_finalize_flow_5_step,
     pbb,
     io_seproxyhal_touch_verify_ok(NULL),
     {
       &C_icon_validate_14,
-      "Accept",
-      "and send"
+      UX_FINALIZE_FLOW_5_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_finalize_flow_6_step,
     pb,
     io_seproxyhal_touch_verify_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject",
+      UX_FINALIZE_FLOW_6_STEP_LINE1
     });
 // finalize: confirm transaction / Fees: feesAmount
 UX_FLOW(ux_finalize_flow,
@@ -431,13 +429,12 @@ UX_FLOW(ux_finalize_flow,
 );
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_display_public_flow_1_step,
     pnn,
     {
       &C_icon_warning,
-      "The derivation",
-      "path is unusual!",
+      UX_DISPLAY_PUBLIC_FLOW_1_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_display_public_flow_2_step,
@@ -446,22 +443,20 @@ UX_STEP_NOCB(
       .title = "Derivation path",
       .text = vars.tmp_warning.derivation_path,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_display_public_flow_3_step,
     pnn,
     io_seproxyhal_touch_display_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject if you're",
-      "not sure",
+      UX_DISPLAY_PUBLIC_FLOW_3_STEP_LINE1
     });
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_display_public_flow_4_step,
     pnn,
     {
       &C_icon_validate_14,
-      "Approve derivation",
-      "path",
+      UX_DISPLAY_PUBLIC_FLOW_4_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_display_public_flow_5_step,
@@ -470,21 +465,21 @@ UX_STEP_NOCB(
       .title = "Address",
       .text = (char *)G_io_apdu_buffer+200,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_display_public_flow_6_step,
     pb,
     io_seproxyhal_touch_display_ok(NULL),
     {
       &C_icon_validate_14,
-      "Approve",
+      UX_DISPLAY_PUBLIC_FLOW_6_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_display_public_flow_7_step,
     pb,
     io_seproxyhal_touch_display_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject",
+      UX_DISPLAY_PUBLIC_FLOW_7_STEP_LINE1
     });
 
 UX_FLOW(ux_display_public_with_warning_flow,
@@ -506,22 +501,21 @@ UX_FLOW(ux_display_public_flow,
 
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_display_token_flow_1_step,
     pbb,
     io_seproxyhal_touch_display_ok(NULL),
     {
       &C_icon_validate_14,
-      "Confirm token",
-      (char *)G_io_apdu_buffer+200,
+      UX_DISPLAY_TOKEN_FLOW_1_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_display_token_flow_2_step,
     pb,
     io_seproxyhal_touch_display_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject",
+      UX_DISPLAY_TOKEN_FLOW_2_STEP_LINE1
     });
 
 UX_FLOW(ux_display_token_flow,
@@ -530,22 +524,21 @@ UX_FLOW(ux_display_token_flow,
 );
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_request_pubkey_approval_flow_1_step,
     pbb,
     io_seproxyhal_touch_display_ok(NULL),
     {
       &C_icon_validate_14,
-      "Export",
-      "public key?",
+      UX_REQUEST_PUBKEY_APPROVAL_FLOW_1_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_request_pubkey_approval_flow_2_step,
     pb,
     io_seproxyhal_touch_display_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject",
+      UX_REQUEST_PUBKEY_APPROVAL_FLOW_2_STEP_LINE1
     });
 
 UX_FLOW(ux_request_pubkey_approval_flow,
@@ -554,13 +547,12 @@ UX_FLOW(ux_request_pubkey_approval_flow,
 );
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_request_change_path_approval_flow_1_step,
     pbb,
     {
       &C_icon_eye,
-      "The change path",
-      "is unusual",
+      UX_REQUEST_CHANGE_PATH_APPROVAL_FLOW_1_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_request_change_path_approval_flow_2_step,
@@ -569,22 +561,21 @@ UX_STEP_NOCB(
       .title = "Change path",
       .text = vars.tmp_warning.derivation_path,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_request_change_path_approval_flow_3_step,
     pbb,
     io_seproxyhal_touch_display_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject if you're",
-      "not sure",
+      UX_REQUEST_CHANGE_PATH_APPROVAL_FLOW_3_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_request_change_path_approval_flow_4_step,
     pb,
     io_seproxyhal_touch_display_ok(NULL),
     {
       &C_icon_validate_14,
-      "Approve",
+      UX_REQUEST_CHANGE_PATH_APPROVAL_FLOW_4_STEP_LINE1
     });
 
 UX_FLOW(ux_request_change_path_approval_flow,
@@ -595,13 +586,12 @@ UX_FLOW(ux_request_change_path_approval_flow,
 );
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_request_sign_path_approval_flow_1_step,
     pbb,
     {
       &C_icon_eye,
-      "The sign path",
-      "is unusual",
+      UX_REQUEST_SIGN_PATH_APPROVAL_FLOW_1_STEP_LINE1
     });
 UX_STEP_NOCB(
     ux_request_sign_path_approval_flow_2_step,
@@ -610,14 +600,13 @@ UX_STEP_NOCB(
       .title = "Sign path",
       .text = vars.tmp_warning.derivation_path,
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_request_sign_path_approval_flow_3_step,
     pbb,
     io_seproxyhal_touch_sign_cancel(NULL),
     {
       &C_icon_crossmark,
-      "Reject if you're",
-      "not sure",
+      UX_REQUEST_SIGN_PATH_APPROVAL_FLOW_3_STEP_LINE1
     });
 UX_STEP_CB(
     ux_request_sign_path_approval_flow_4_step,
@@ -637,43 +626,41 @@ UX_FLOW(ux_request_sign_path_approval_flow,
 
 
 //////////////////////////////////////////////////////////////////////
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_request_segwit_input_approval_flow_1_step,
     pb,
     {
-      .icon = &C_icon_warning,
-      .line1 = "Unverified inputs"
+      &C_icon_warning,
+      UX_REQUEST_SEGWIT_INPUT_APPROVAL_FLOW_1_STEP_LINE1
     });
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_request_segwit_input_approval_flow_2_step,
     nn,
     {
-      .line1 = "Update",
-      .line2 = " Ledger Live"
+      UX_REQUEST_SEGWIT_INPUT_APPROVAL_FLOW_2_STEP_LINE1
     });
-UX_STEP_NOCB(
+UX_LOC_STEP_NOCB(
     ux_request_segwit_input_approval_flow_3_step,
     nn
     ,
     {
-      .line1 = "or third party",
-      .line2 = "wallet software"
+      UX_REQUEST_SEGWIT_INPUT_APPROVAL_FLOW_3_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_request_segwit_input_approval_flow_4_step,
     pb,
     io_seproxyhal_touch_display_cancel(NULL),
     {
-      .icon = &C_icon_crossmark,
-      .line1 = "Cancel"
+      &C_icon_crossmark,
+      UX_REQUEST_SEGWIT_INPUT_APPROVAL_FLOW_4_STEP_LINE1
     });
-UX_STEP_CB(
+UX_LOC_STEP_CB(
     ux_request_segwit_input_approval_flow_5_step,
     pb,
     io_seproxyhal_touch_display_ok(NULL),
     {
       &C_icon_validate_14,
-      "Continue"
+      UX_REQUEST_SEGWIT_INPUT_APPROVAL_FLOW_5_STEP_LINE1
     });
 
 UX_FLOW(ux_request_segwit_input_approval_flow,

@@ -1,6 +1,8 @@
 #ifdef HAVE_UX_LOC_STRINGS
 #include <stdio.h>
 #include "ux.h"
+#include "btchip_display_variables.h"
+#include "os_io.h"
 #include "app_ux_loc_strings.h"
 
 // Include the files containing localised strings:
@@ -8,22 +10,20 @@
 #include "app_ux_loc_strings_fr.h"
 
 // Selected language (English by default):
-static UX_LOC_LANGUAGES app_ux_loc_language = UX_LOC_ENGLISH;
+static UX_LOC_LANGUAGES ux_loc_language = UX_LOC_ENGLISH;
 
 void select_language(UX_LOC_LANGUAGES language) {
   if (language < NB_UX_LOC_LANGUAGES)
-    app_ux_loc_language = language;
+    ux_loc_language = language;
 }
 
 char *get_ux_loc_string(UX_LOC_STRINGS_INDEX index)
 {
   char *string=NULL;
 
-  //PRINTF("get_app_ux_loc_string, index=%d", index);
-  //PRINTF("app_ux_loc_strings_en[index]=%s", app_ux_loc_strings_en[index]);
   // Get the string:
   if (index < NB_APP_UX_LOC_STRINGS) {
-    switch(app_ux_loc_language)
+    switch(ux_loc_language)
     {
       case UX_LOC_FRENCH:
         string = (char *)app_ux_loc_strings_fr[index];
@@ -32,6 +32,21 @@ char *get_ux_loc_string(UX_LOC_STRINGS_INDEX index)
       default:
         string = (char *)app_ux_loc_strings_en[index];
         break;
+    }
+    // Handle special cases of strings dynamically built into specific buffers:
+    // This 'trick' is needed to be able to only store 1st index of strings
+    // instead of having an array with indexes of line1, line2, line3 etc
+    if (!strcmp(string, APP_UX_LOC_FULL_ADDRESS)) {
+      string = (char *)vars.tmp.fullAddress;
+    }
+    else if (!strcmp(string, APP_UX_LOC_FULL_AMOUNT)) {
+      string = (char *)vars.tmp.fullAmount;
+    }
+    else if (!strcmp(string, APP_UX_LOC_FEES_AMOUNT)) {
+      string = (char *)vars.tmp.feesAmount;
+    }
+    else if (!strcmp(string, APP_UX_LOC_G_IO_APDU_BUF)) {
+      string = (char *)G_io_apdu_buffer+200;
     }
     //PRINTF("get_app_ux_loc_string, string=%s", string);
   }
